@@ -20,19 +20,22 @@ WORKDIR "${cron_dir}"
 RUN echo -e "#!/bin/sh\nsu -s /bin/sh local -c \'${script_name}\'" > "run_me_no_root" && \
     chmod +x "run_me_no_root"
 
-# backup crontab and create a new one with only the frequency what we need
-# "%VAR" is a placeholder that is replaced by sed in the "/root/start.sh" script defined below
+# backup crontab and create a new one with only the frequency that we need
+# "%VAR" is a placeholder that is replaced by sed in the "start-me.sh" script defined below
 RUN mv "/var/spool/cron/crontabs/root" "/var/spool/cron/crontabs/root.bak" && \
     echo "*/%VAR% * * * * run-parts \"${cron_dir}\"" > "/var/spool/cron/crontabs/root"
 
-# create /root/start.sh that replaces cron job frequency at runtime and starts crond
+# create script "start-me.sh" that replaces cron job frequency at runtime and starts crond
 RUN echo -e '#!/bin/sh\n\
     FREQ=${FREQUENCY:-'${FREQUENCY}'}\n\
     sed -i -E "s/%VAR%/${FREQ}/" "/var/spool/cron/crontabs/root"\n\
     echo "Cron frequency: ${FREQ} min"\n\
-    crond -l 1 -f' > "/root/start.sh" && \
-    chmod +x "/root/start.sh"
+    crond -l 1 -f' > "/usr/bin/start-me.sh" && \
+    chmod +x "/usr/bin/start-me.sh"
 
-WORKDIR "/root"
+# create script "stop-me.sh" for killing crond, thus terminating the container
+# the script is usable also as Kubernetes preStop Hook
+RUN echo -e '#!/bin/sh\nkill $(pidof crond)' > "/usr/bin/stop-me.sh" && \
+    chmod +x "/usr/bin/stop-me.sh"
 
-ENTRYPOINT [ "/bin/sh", "-c", "/root/start.sh" ]
+ENTRYPOINT [ "/bin/sh", "-c", "/usr/bin/start-me.sh" ]

@@ -32,9 +32,17 @@ SECRET()        # SECRET associated to the above KEY
 ```
 Frequency can vary from 1 to 59 minutes, as per [standard crontab syntax](https://crontab.guru/#*/15_*_*_*_*).
 ### Building the image
+#### Host architecture
 ```
 docker build -t tiny-godaddy-ddns .
 ```
+#### Multi architecture
+The image supports `linux/amd64`, `linux/arm/v6`, `linux/arm/v7`, `linux/arm64`, `linux/386`, `linux/ppc64le`, `linux/s390x`.
+Take a look at
+```
+build-multiarch.sh
+```
+and adjust it as needed.
 ### Start a container
 Check every `10` min that the DNS record `@` of `example.com` is aligned with the current public IP address: 
 ```
@@ -82,11 +90,32 @@ crond[7]: USER root pid   8 cmd run-parts "/etc/periodic/custom"
 FAILURE! IP has NOT been updated.
 run-parts: /etc/periodic/custom/run_me_no_root: exit status 1
 ```
-### Terminate a container
-Use the usual `docker kill [container name]`
+### Terminate the container
+For a graceful termination execute:
+```
+docker exec [container] /bin/sh -c /usr/bin/stop-me.sh
+```
+The script `/usr/bin/stop-me.sh` will kill the running `crond` and is helpful to abstract details about the inner workings of the container.
 ## Using with Kubernetes
 ```
 More to come here
+```
+### Graceful termination
+The command for terminating the container defined [above](#Terminate-the-container) can also be used as a [PreStop](https://kubernetes.io/docs/concepts/containers/container-lifecycle-hooks/#container-hooks) hook for Kubernetes.
+```
+      [..]
+      containers:
+      - name: tiny-godaddy-ddns
+        image: alcol/tiny-godaddy-ddns:latest
+        lifecycle:
+          preStop:
+            exec:
+              command: [
+                # Graceful shutdown
+                "/bin/sh", "-c", "/usr/bin/stop-me.s"
+              ]
+        env:
+        [..]
 ```
 ## Security
 Although `crond` runs with `root` priviledges, `update-ip.sh` is executed in user space. This is enforced at Docker build time by encapsulating the script into a wrapper that calls `su -s /bin/sh local -c update-ip.sh`.
@@ -98,5 +127,5 @@ In case of errors (wrong credentials, lack of connection, timeout, ..) `update-i
 ## Obtaining GoDaddy developer credentials
 Steps:
 - Go to https://developer.godaddy.com/getstarted and create a developer account.
-- Get valid **production** credentials (a KEY and a SECRET) to access the API. Do not select testing, otherwise changes are not exposed.
+- Get valid **production** credentials (a KEY and a SECRET) to access the API from https://developer.godaddy.com/keys. Do not select testing (ote), otherwise changes are not exposed.
 - Use the credentials as described above.
