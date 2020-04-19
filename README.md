@@ -97,9 +97,7 @@ docker exec [container] /bin/sh -c /usr/bin/stop-me.sh
 ```
 The script `/usr/bin/stop-me.sh` will kill the running `crond` and is helpful to abstract details about the inner workings of the container.
 ## Using with Kubernetes
-```
-More to come here
-```
+For a working Kubernetes [Deployment](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/) have a look at [alessiocol/k8-scripts/ddns-update](https://github.com/alessiocol/k8-scripts/blob/master/ddns-update).
 ### Graceful termination
 The command for terminating the container defined [above](#Terminate-the-container) can also be used as a [PreStop](https://kubernetes.io/docs/concepts/containers/container-lifecycle-hooks/#container-hooks) hook for Kubernetes.
 ```
@@ -112,7 +110,7 @@ The command for terminating the container defined [above](#Terminate-the-contain
             exec:
               command: [
                 # Graceful shutdown
-                "/bin/sh", "-c", "/usr/bin/stop-me.s"
+                "/bin/sh", "-c", "/usr/bin/stop-me.sh"
               ]
         env:
         [..]
