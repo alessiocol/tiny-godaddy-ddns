@@ -1,5 +1,7 @@
 #!/bin/sh
 
+set -euo pipefail
+
 # Updates the DNS record of your domain registered on GoDaddy to the current IP assigned to your internet connection.
 # Inspired by https://uk.godaddy.com/community/Managing-Domains/Dynamic-DNS-Updates/td-p/7862.
 #
@@ -24,11 +26,15 @@ PORT=${PORT:-"1"}       # required port, e.g., "1"
 WEIGHT=${WEIGHT:-"1"}   # required weight, e.g., "1"
 # KEY                   # KEY for accessing GoDaddy developer API
 # SECRET                # SECRET for the above KEY
-
+PHASE=${PHASE:-"0"}     # initial sleep before script execution
+                        #   useful for shifting phase in case of multiple script executing
+                        #   at the same time
 #
 # usually no need to modify beyond this point
 #
 [ "$(id -u)" -eq 0 ] && echo "Please run without root priviledges." && exit 1
+
+sleep "${PHASE}"
 
 # get IP currently assigned to the selected DNS record
 get_dns_ip() {

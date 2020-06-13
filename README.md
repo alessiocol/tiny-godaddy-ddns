@@ -21,6 +21,7 @@ Anyone who:
 Environment variables (default in parenthesese):
 ```
 FREQUENCY(15)   # frequency in minutes of the cron job. This variable is defined inside `Dockerfile`.
+PHASE(0)        # phase of the execution. Should be less than FREQUENCY. See below for more details.
 DOMAIN()        # domain name you want to update, e.g., "example.com"
 TYPE(A)         # record type, e.g., "A"
 NAME(@)         # name of the record to update, e.g., "@"
@@ -30,8 +31,9 @@ WEIGHT(1)       # required weight, e.g., "1"
 KEY()           # KEY for accessing GoDaddy developer API
 SECRET()        # SECRET associated to the above KEY
 ```
-Frequency can vary from 1 to 59 minutes, as per [standard crontab syntax](https://crontab.guru/#*/15_*_*_*_*).
+`FREQUENCY` can vary from 1 to 59 minutes, as per [standard crontab syntax](https://crontab.guru/#*/15_*_*_*_*).
 
+`PHASE` is usually defined in seconds (`s`) or minutes (`m`) following [GNU sleep](https://www.gnu.org/software/coreutils/manual/html_node/sleep-invocation.html#sleep-invocation) syntax. Can be a floating poit number and should be less than `FREQUENCY`. Example: both `PHASE=1.5m` and `PHASE=90s` mean 1 minute 30 seconds.
 ### Building the image
 #### Host architecture
 ```
