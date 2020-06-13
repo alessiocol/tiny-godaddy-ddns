@@ -36,7 +36,7 @@ get_dns_ip() {
       DNS_IP=$(echo "${RET}" | grep -oE "\b([0-9]{1,3}\.){3}[0-9]{1,3}\b")
 }
 
-CURL="curl -m 30" # set timeout for each curl call to 30s
+CURL="curl --silent -m 30" # set timeout for each curl call to 30s
 HEADER="Authorization: sso-key $KEY:$SECRET"
 
 # get current public IP address

@@ -31,6 +31,7 @@ KEY()           # KEY for accessing GoDaddy developer API
 SECRET()        # SECRET associated to the above KEY
 ```
 Frequency can vary from 1 to 59 minutes, as per [standard crontab syntax](https://crontab.guru/#*/15_*_*_*_*).
+
 ### Building the image
 #### Host architecture
 ```
@@ -43,6 +44,7 @@ Take a look at
 build-multiarch.sh
 ```
 and adjust it as needed.
+
 ### Start a container
 Check every `10` min that the DNS record `@` of `example.com` is aligned with the current public IP address: 
 ```
@@ -91,34 +93,16 @@ FAILURE! IP has NOT been updated.
 run-parts: /etc/periodic/custom/run_me_no_root: exit status 1
 ```
 ### Terminate the container
-For a graceful termination execute:
-```
-docker exec [container] /bin/sh -c /usr/bin/stop-me.sh
-```
-The script `/usr/bin/stop-me.sh` will kill the running `crond` and is helpful to abstract details about the inner workings of the container.
+The container reacts to the default `SIGTERM` signal and exists gracefully without extra actions needed.
+
 ## Using with Kubernetes
 For a working Kubernetes [Deployment](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/) have a look at [alessiocol/k8-scripts/ddns-update](https://github.com/alessiocol/k8-scripts/blob/master/ddns-update).
-### Graceful termination
-The command for terminating the container defined [above](#Terminate-the-container) can also be used as a [PreStop](https://kubernetes.io/docs/concepts/containers/container-lifecycle-hooks/#container-hooks) hook for Kubernetes.
-```
-      [..]
-      containers:
-      - name: tiny-godaddy-ddns
-        image: alcol/tiny-godaddy-ddns:latest
-        lifecycle:
-          preStop:
-            exec:
-              command: [
-                # Graceful shutdown
-                "/bin/sh", "-c", "/usr/bin/stop-me.sh"
-              ]
-        env:
-        [..]
-```
+
 ## Security
 Although `crond` runs with `root` priviledges, `update-ip.sh` is executed in user space. This is enforced at Docker build time by encapsulating the script into a wrapper that calls `su -s /bin/sh local -c update-ip.sh`.
 
 Moreover, the script exits automatically if it recognizes priviledged execution.
+
 ## Error management
 In case of errors (wrong credentials, lack of connection, timeout, ..) `update-ip.sh` will print the corresponding error message on `stdout` and return code `1`. However, the cron job will keep running and it is the responsibility of the operator to monitor the behaviour of the service by inspecting the logs.
 

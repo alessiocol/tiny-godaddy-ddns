@@ -1,6 +1,6 @@
 FROM alpine:latest
 
-RUN apk add --no-cache curl
+RUN apk add --no-cache curl tini
 
 RUN addgroup -g 1000 -S local && \
     adduser -u 1000 -S local -G local
@@ -30,12 +30,9 @@ RUN echo -e '#!/bin/sh\n\
     FREQ=${FREQUENCY:-'${FREQUENCY}'}\n\
     sed -i -E "s/%VAR%/${FREQ}/" "/var/spool/cron/crontabs/root"\n\
     echo "Cron frequency: ${FREQ} min"\n\
-    crond -l 1 -f' > "/usr/bin/start-me.sh" && \
+    # using exec is essential to ensure signals are forwarded\n\
+    exec crond -l 1 -f\n' > "/usr/bin/start-me.sh" && \
     chmod +x "/usr/bin/start-me.sh"
 
-# create script "stop-me.sh" for killing crond, thus terminating the container
-# the script is usable also as Kubernetes preStop Hook
-RUN echo -e '#!/bin/sh\nkill $(pidof crond)' > "/usr/bin/stop-me.sh" && \
-    chmod +x "/usr/bin/stop-me.sh"
-
-ENTRYPOINT [ "/bin/sh", "-c", "/usr/bin/start-me.sh" ]
+# using tini https://github.com/krallin/tini
+ENTRYPOINT [ "/sbin/tini", "--", "/usr/bin/start-me.sh" ]
